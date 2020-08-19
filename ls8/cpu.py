@@ -12,8 +12,10 @@ class CPU:
         self.ram = [0] * 256
         # registers
         self.reg = [0] * 8
-        # internal registers
+        # program counter
         self.pc = 0
+        # stack pointer
+        self.sp = 7
         # running
         self.running = False
 
@@ -79,12 +81,16 @@ class CPU:
         LDI = 0b10000010
         PRN = 0b01000111
         HLT = 0b00000001
+        ADD = 0b10100000
         MUL = 0b10100010 
+        PUSH = 0b01000101
+        POP = 0b01000110
+
 
         while running:
 
             # read memory adderss in pc
-            # store result in "IR" (variable)
+            # store result in "IR" (variable) instruction register
             ir = self.ram[self.pc]
 
             # using ram_read , read bytes at PC+1 and PC+2
@@ -102,9 +108,29 @@ class CPU:
                 running = False
                 sys.exit()
                 self.pc += 1
+            elif ir == ADD:
+                print(self.reg[operand_a] + self.reg[operand_b])
+                self.pc += 3
             elif ir == MUL:
                 print(self.reg[operand_a] * self.reg[operand_b])
                 self.pc += 3
+            elif ir == PUSH:
+                reg_index = self.ram[self.pc + 1]
+                value = self.reg[reg_index]
+                # decrement for PUSH
+                self.reg[self.sp] -= 1
+
+                self.ram[self.reg[self.sp]] = value
+                self.pc += 2
+            elif ir == POP:
+                reg_index = self.ram[self.pc + 1]
+                value = self.ram[self.reg[self.sp]]
+
+                self.reg[reg_index] = value
+                # incremenet for POP
+                self.reg[self.sp] += 1
+
+                self.pc += 2
             else:
                 print("command not available")
                 sys.exit()
