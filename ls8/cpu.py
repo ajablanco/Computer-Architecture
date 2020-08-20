@@ -16,9 +16,21 @@ class CPU:
         self.pc = 0
         # stack pointer
         self.sp = 7
+        self.op_size = 1
         # running
-        self.running = False
+        self.running = True
 
+        self.branchtable = {
+            0b00000001: self.HLT,
+            0b10000010: self.LDI,
+            0b01000111: self.PRN,
+            0b10100000: self.ADD,
+            0b10100010: self.MUL,
+            0b01000101: self.PUSH,
+            0b01000110: self.POP,
+            0b01010000: self.CALL,
+            0b00010001: self.RET
+        }
 
 
     # MAR == ADDRESS
@@ -28,6 +40,55 @@ class CPU:
     # MDR == VALUE
     def ram_write(self, MAR, MDR):
         self.ram[MAR] = MDR
+
+    # op methods
+    def HLT(self, operand_a, operand_b):
+        self.running = False
+        self.pc += 1
+
+    def LDI(self, operand_a, operand_b):
+        self.reg[operand_a] = operand_b
+        self.pc += 3
+
+    def PRN(self, operand_a, operand_b):
+        num = self.reg[int(str(operand_a))]
+        print(num)
+        self.pc += 2
+
+    def ADD(self, operand_a, operand_b):
+        self.alu("ADD", operand_a, operand_b)
+        self.pc += 3
+    def MUL(self, operand_a, operand_b):
+        self.alu("MUL", operand_a, operand_b)
+        self.pc += 3
+
+    def PUSH(self, operand_a, operand_b):
+        reg_index = self.ram[self.pc + 1]
+        value = self.reg[reg_index]
+        # decrement for PUSH
+        self.reg[self.sp] -= 1
+
+        self.ram[self.reg[self.sp]] = value
+        self.pc += 2
+
+    def POP(self, operand_a, operand_b):
+        reg_index = self.ram[self.pc + 1]
+        value = self.ram[self.reg[self.sp]]
+
+        self.reg[reg_index] = value
+        # incremenet for POP
+        self.reg[self.sp] += 1
+
+        self.pc += 2
+    def CALL(self, operand_a, operand_b):
+        self.reg[self.sp] -= 1
+        self.ram[self.reg[self.sp]] = self.pc + 2
+        reg_index = self.ram[self.pc + 1]
+        self.pc = self.reg[reg_index]
+
+    def RET(self, operand_a, operand_b):
+        self.pc = self.ram[self.reg[self.sp]]
+        self.reg[self.sp] += 1
 
     def load(self, filename):
         """Load a program into memory."""
@@ -77,17 +138,9 @@ class CPU:
 
     def run(self):
         """Run the CPU."""
-        running = True
-        LDI = 0b10000010
-        PRN = 0b01000111
-        HLT = 0b00000001
-        ADD = 0b10100000
-        MUL = 0b10100010 
-        PUSH = 0b01000101
-        POP = 0b01000110
+        self.trace()
 
-
-        while running:
+        while self.running is True:
 
             # read memory adderss in pc
             # store result in "IR" (variable) instruction register
@@ -97,40 +150,4 @@ class CPU:
             operand_a = self.ram_read(self.pc + 1)
             operand_b = self.ram_read(self.pc + 2)
 
-            # if-elif?
-            if ir == LDI:
-                self.reg[operand_a] = operand_b
-                self.pc += 3
-            elif ir == PRN:
-                print(self.reg[operand_a])
-                self.pc += 2
-            elif ir == HLT:
-                running = False
-                sys.exit()
-                self.pc += 1
-            elif ir == ADD:
-                print(self.reg[operand_a] + self.reg[operand_b])
-                self.pc += 3
-            elif ir == MUL:
-                print(self.reg[operand_a] * self.reg[operand_b])
-                self.pc += 3
-            elif ir == PUSH:
-                reg_index = self.ram[self.pc + 1]
-                value = self.reg[reg_index]
-                # decrement for PUSH
-                self.reg[self.sp] -= 1
-
-                self.ram[self.reg[self.sp]] = value
-                self.pc += 2
-            elif ir == POP:
-                reg_index = self.ram[self.pc + 1]
-                value = self.ram[self.reg[self.sp]]
-
-                self.reg[reg_index] = value
-                # incremenet for POP
-                self.reg[self.sp] += 1
-
-                self.pc += 2
-            else:
-                print("command not available")
-                sys.exit()
+            self.branchtable[ir](operand_a, operand_b)
