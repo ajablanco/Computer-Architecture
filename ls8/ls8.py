@@ -5,7 +5,8 @@
 import sys
 from cpu import *
 
+
 cpu = CPU()
 
-cpu.load()
-cpu.run()
+cpu.load("examples/test.ls8")
+cpu.run() 
