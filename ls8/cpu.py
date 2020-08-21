@@ -36,7 +36,10 @@ class CPU:
             0b10100111: self.CMP,
             0b01010100: self.JMP,
             0b01010101: self.JEQ,
-            0b01010110: self.JNE
+            0b01010110: self.JNE,
+            0b10101000: self.AND,
+            0b10101010: self.OR,
+            0b10101011: self.XOR
         }
 
 
@@ -117,6 +120,18 @@ class CPU:
         else:
             self.pc += 2
 
+    def AND(self, operand_a, operand_b):
+        self.alu("AND", operand_a, operand_b)
+        self.pc += 3
+
+    def OR(self, operand_a, operand_b):
+        self.alu("OR", operand_a, operand_b)
+        self.pc += 3
+
+    def XOR(self, operand_a, operand_b):
+        self.alu("XOR", operand_a, operand_b)
+        self.pc += 3
+
     def load(self, filename):
         """Load a program into memory."""
         try:
@@ -154,8 +169,14 @@ class CPU:
 #   otherwise.
             elif self.reg[reg_b] == self.reg[reg_a]:
                 self.fl = 0b00000001
+        elif op == "AND":
+            self.reg[reg_a] &= self.reg[reg_b]
 
+        elif op == "OR":
+            self.reg[reg_a] |= self.reg[reg_b]
 
+        elif op == "XOR":
+            self.reg[reg_a] ^= self.reg[reg_b]
 
         else:
             raise Exception("Unsupported ALU operation")

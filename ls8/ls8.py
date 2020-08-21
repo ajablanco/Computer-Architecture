@@ -8,5 +8,5 @@ from cpu import *
 
 cpu = CPU()
 
-cpu.load("examples/sctest.ls8")
+cpu.load("examples/test.ls8")
 cpu.run() 
