@@ -20,6 +20,9 @@ class CPU:
         # running
         self.running = True
 
+        # add flag
+        self.fl = 0b00000000
+
         self.branchtable = {
             0b00000001: self.HLT,
             0b10000010: self.LDI,
@@ -29,7 +32,11 @@ class CPU:
             0b01000101: self.PUSH,
             0b01000110: self.POP,
             0b01010000: self.CALL,
-            0b00010001: self.RET
+            0b00010001: self.RET,
+            0b10100111: self.CMP,
+            0b01010100: self.JMP,
+            0b01010101: self.JEQ,
+            0b01010110: self.JNE
         }
 
 
@@ -51,13 +58,14 @@ class CPU:
         self.pc += 3
 
     def PRN(self, operand_a, operand_b):
-        num = self.reg[int(str(operand_a))]
+        num = self.reg[operand_a]
         print(num)
         self.pc += 2
 
     def ADD(self, operand_a, operand_b):
         self.alu("ADD", operand_a, operand_b)
         self.pc += 3
+
     def MUL(self, operand_a, operand_b):
         self.alu("MUL", operand_a, operand_b)
         self.pc += 3
@@ -90,6 +98,25 @@ class CPU:
         self.pc = self.ram[self.reg[self.sp]]
         self.reg[self.sp] += 1
 
+    def CMP(self, operand_a, operand_b):
+        self.alu("CMP", operand_a, operand_b)
+        self.pc += 3
+
+    def JMP(self, operand_a, operand_b):
+        self.pc = self.reg[operand_a]
+
+    def JEQ(self, operand_a, operand_b):
+        if self.fl == 0b00000001:
+            self.pc = self.reg[operand_a]
+        else:
+            self.pc += 2
+
+    def JNE(self, operand_a, operand_b):
+        if self.fl != 1:
+            self.pc = self.reg[operand_a]
+        else:
+            self.pc += 2
+
     def load(self, filename):
         """Load a program into memory."""
         try:
@@ -113,6 +140,23 @@ class CPU:
             self.reg[reg_a] += self.reg[reg_b]
         elif op == "MUL":
             self.reg[reg_a] *= self.reg[reg_b]
+#         `FL` bits: `00000LGE`
+        elif op == "CMP":
+# * `L` Less-than: during a `CMP`, set to 1 if registerA is less than registerB,
+#   zero otherwise.
+            if self.reg[reg_b] > self.reg[reg_a]:
+                self.fl = 0b00000100
+# * `G` Greater-than: during a `CMP`, set to 1 if registerA is greater than
+#   registerB, zero otherwise.
+            elif self.reg[reg_a] < self.reg[reg_b]:
+                self.fl = 0b00000010
+# * `E` Equal: during a `CMP`, set to 1 if registerA is equal to registerB, zero
+#   otherwise.
+            elif self.reg[reg_b] == self.reg[reg_a]:
+                self.fl = 0b00000001
+
+
+
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -138,8 +182,6 @@ class CPU:
 
     def run(self):
         """Run the CPU."""
-        self.trace()
-
         while self.running is True:
 
             # read memory adderss in pc
